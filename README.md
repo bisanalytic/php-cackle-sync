@@ -13,4 +13,4 @@ How it works:
 
 3. Parent comments in local db have the local comment's ID
 
-4. Comment's template display all comments at the page for SEO
+4. All comment from cackle will saved to your database
