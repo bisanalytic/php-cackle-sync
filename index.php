@@ -17,6 +17,7 @@ class Cackle{
         if ($this->time_is_over(CACKLE_TIMER)){
             $this->comment_sync(ACCOUNT_API_KEY,SITE_API_KEY);      
         }
+        $this->cackle_display_comments();
     }
     
     function time_is_over($cron_time){
@@ -26,7 +27,6 @@ class Cackle{
         $establish_time_sql="insert into `common` (`common_name`,`common_value`) values ('last_time',$now)";
         $delete_time_sql="delete from `common` where `common_name` = 'last_time' and `common_value` > 0;";
         if ($get_last_time==null){
-            
             $this->db_connect($establish_time_sql);
             return time();
         }
@@ -46,11 +46,20 @@ class Cackle{
         mysql_select_db(CACKLE_DB_NAME, $link) or die(mysql_error());
         mysql_query('SET NAMES \'UTF8\'');
         $r = mysql_query($sql, $link) or die(mysql_error());
-        $db_resp = mysql_fetch_array($r);
-        mysql_close($link);
+        
+        
         if($field_to_return!=null){
+            $db_resp = mysql_fetch_array($r);
             return $db_resp[$field_to_return];
         }
+        $x=0;
+        while ($res=mysql_fetch_array($r)) {
+            
+            $row[$x]=$res;
+            $x++;
+        }
+        return $row;
+        mysql_close($link);
     }
 
     function comment_sync($accountApiKey,$siteApiKey,$cackle_last_comment=0){
@@ -157,11 +166,8 @@ class Cackle{
         $comment_id = $comment['id']; 
         if ($comment['parentId']) {
             $comment_parent_id = $comment['parentId'];
-        
             $sql = "select comment_id from comment where user_agent='Cackle:$comment_parent_id';";
             $get_parent_local_id = $this->db_connect($sql, "comment_id"); //get parent comment_id in local db
-        
-        
         }
         //You should define post_id  in $commentdata according you cms engine(ex. maybe your cms have function to return post_id by page's url) 
         $commentdata = array(
@@ -198,7 +204,59 @@ class Cackle{
             $this->insert_comm($comment);
         }
     }
+     function cackle_comment( $comment) {
+        
+        ?><li  id="cackle-comment-<?php echo $comment['comment_id']; ?>">
+              <div id="cackle-comment-header-<?php echo $comment['comment_id']; ?>" class="cackle-comment-header">
+                  <cite id="cackle-cite-<?php echo $comment['comment_id']; ?>">
+                  <?php if($comment['author_name']) : ?>
+                      <a id="cackle-author-user-<?php echo $comment['comment_id']; ?>" href="<?php echo $comment['author_www']; ?>" target="_blank" rel="nofollow"><?php echo $comment['author_name']; ?></a>
+                  <?php else : ?>
+                      <span id="cackle-author-user-<?php echo $comment['comment_id']; ?>"><?php echo $comment['anonym_name']; ?></span>
+                  <?php endif; ?>
+                  </cite>
+              </div>
+              <div id="cackle-comment-body-<?php echo $comment['comment_id']; ?>" class="cackle-comment-body">
+                  <div id="cackle-comment-message-<?php echo $comment['comment_id']; ?>" class="cackle-comment-message">
+                  <?php echo $comment['message']; ?>
+                  </div>
+              </div>
+          </li><?php } 
     
+     
+     function cackle_display_comments(){ ?>
+         <div id="mc-container">
+            <div id="mc-content">
+                <ul id="cackle-comments">
+                <?php $this->list_comments(); ?> 
+                </ul>
+            </div>
+        </div>
+        <script type="text/javascript">
+        var mcSite = '<?php echo $api_id?>';
+        var mcChannel = '<?php echo $post->ID?>';
+        document.getElementById('mc-container').innerHTML = '';
+        (function() {
+            var mc = document.createElement('script');
+            mc.type = 'text/javascript';
+            mc.async = true;
+            mc.src = 'http://cackle.me/mc.widget-min.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(mc);
+        })();
+        </script>
+<?php }
+    function get_local_comments(){
+        //getting all comments for special post_id from database. 
+        //$post_id = 1;
+        $get_all_comments = $this->db_connect("select * from `comment` where `post_id` = $post_id;");
+        return $get_all_comments;
+    }
+    function list_comments(){
+        $obj = $this->get_local_comments();
+        foreach ($obj as $comment) {
+            $this->cackle_comment($comment);
+        }
+    }
 }
-
 $a = new Cackle();
+?>
