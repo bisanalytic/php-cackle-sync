@@ -248,7 +248,7 @@ class Cackle{
     function get_local_comments(){
         //getting all comments for special post_id from database. 
         //$post_id = 1;
-        $get_all_comments = $this->db_connect("select * from `comment` where `post_id` = $post_id;");
+        $get_all_comments = $this->db_connect("select * from `comment` where `post_id` = $post_id and `status` = 1;");
         return $get_all_comments;
     }
     function list_comments(){
