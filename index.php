@@ -106,12 +106,11 @@ class Cackle{
                 
                 $key_str .= "`" . $key  . "`, ";
 
-                $val_str .=  "'" . $val  . "', ";
+                $val_str .=  "'" . mysql_escape_string($val)  . "', ";
             }
             $str .= "insert into " . "`" . $table . "` " ;
             $sql_req=$str . "(" . $key_str  . ") values (" . $val_str . "); ";
             $sql_req = str_replace(", )",")",$sql_req);
-            var_dump($sql_req);
            return $sql_req;
     }
     
@@ -124,16 +123,16 @@ class Cackle{
     function insert_comm($comment){
 
         $status;
-        if ($comment['status'] == "APPROVED"){
+        if ($comment['status'] == "approved"){
             $status = 1;
         }
-        elseif ($comment['status'] == "PENDING" || $comment['status'] == "REJECTED" ){
+        elseif ($comment['status'] == "pending" || $comment['status'] == "rejected" ){
             $status = 0;
         }
-        elseif ($comment['status'] == "SPAM" ){
+        elseif ($comment['status'] == "spam" ){
             $status = "spam";
         }
-        else {
+        elseif ($comment['status'] == "deleted" ){
             $status = "trash";
         }
     
