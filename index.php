@@ -121,20 +121,19 @@ class Cackle{
      */
     
     function insert_comm($comment){
-
         $status;
-        if ($comment['status'] == "approved"){
-            $status = 1;
+        if (strtolower($comment['status']) == "approved") {
+          $status = 1;
         }
-        elseif ($comment['status'] == "pending" || $comment['status'] == "rejected" ){
-            $status = 0;
+        elseif (strtolower($comment['status'] == "pending") || strtolower($comment['status']) == "rejected") {
+          $status = 0;
         }
-        elseif ($comment['status'] == "spam" ){
-            $status = "spam";
+        elseif (strtolower($comment['status']) == "spam") {
+          $status = "spam";
         }
-        elseif ($comment['status'] == "deleted" ){
-            $status = "trash";
-        }
+        elseif (strtolower($comment['status']) == "deleted") {
+        $status = "trash";
+    }
     
         /*
          * Here you can convert $url to your post ID
