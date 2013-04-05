@@ -53,6 +53,8 @@ class Cackle{
             return $db_resp[$field_to_return];
         }
         $x=0;
+        if($r==1) return;  // no select request
+	$row=array();      // to be safe with empty select results
         while ($res=mysql_fetch_array($r)) {
             
             $row[$x]=$res;
