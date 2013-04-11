@@ -251,11 +251,54 @@ class Cackle{
         $get_all_comments = $this->db_connect("select * from `comment` where `post_id` = $post_id and `status` = 1;");
         return $get_all_comments;
     }
-    function list_comments(){
+ function list_comments(){
         $obj = $this->get_local_comments();
+
+       echo('<div id="mc-container" style="padding-left:10px">');       
+       echo('<div class="mc-cleanstate mc-content">');
+       echo('<style type="text/css"></style>');
+       echo('<div class="mc-widget-container">');
+       echo('<div class="mc-theme-standart">');
+       echo('<p>Чтобы оставить комментарий, включите javascript и дождитесь полной загрузки страницы</p>');
+       echo('<ul class="mc-comment-list">');
         foreach ($obj as $comment) {
-            $this->cackle_comment($comment);
+            $search=array("&","<",">","\"");
+	    $replace=array("&amp;","&lt;","&gt;","&quot;");	    
+	    echo('<li>');
+	    echo('<div class="mc-comment-wrapper mc-comment-approved">');
+	    echo('<div class="mc-comment-head">');
+	    echo('<table><tbody><tr>');
+	    echo('<td class="mc-comment-avatar-td">');
+	    echo('<a class="mc-comment-author" href="#">');
+	    if ($comment['author_avatar']) 
+	      echo('<img class="mc-avatar-img" src="'.$comment['author_avatar'].'" style="height:32px!important;width:32px!important"');
+	    else; 
+	      echo('<img class="mc-avatar-img" src="anonymous.png" style="height:32px!important;width:32px!important"');
+	    echo('</a></td>');
+	    echo('<td class="mc-comment-user-td">');
+	    if($comment['author_name']) {
+	      echo('<a class="mc-comment-username" href="#" author="'.str_replace($search,$replace,$comment['author_www']).'" target="_blank">');
+	      echo(str_replace($search,$replace,$comment['anonym_name']));
+	      echo('</a></td>');
+	    } else {
+	      echo('<a class="mc-comment-username" href="#" author="" target="_blank">');
+	      echo(str_replace($search,$replace,$comment['anonym_name']));
+	      echo('</a></td>');	    
+	    }
+            
+            echo('</tr></tbody></table>');
+            echo('</div>');            
+            echo('<div class="mc-comment-body">');
+            echo(str_replace($search,$replace,$comment['message']));
+            echo('</div>');
+            echo('</div>');
+            echo('</li>');
         }
+       echo('</ul>');
+       echo('</div>');
+       echo('</div>');
+       echo('</div>');
+       echo('</div>');
     }
 }
 $a = new Cackle();
