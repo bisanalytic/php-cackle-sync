@@ -70,7 +70,7 @@ class Cackle{
             $cackle_last_comment = $get_last_comment;
         }
         $params1 = "accountApiKey=$accountApiKey&siteApiKey=$siteApiKey&id=$cackle_last_comment";
-        $host="cackle.me/api/comment/list?$params1";
+        $host="cackle.me/api/comment/mutable_list?$params1";
         
         
         function curl($url)
@@ -122,21 +122,8 @@ class Cackle{
      * Insert each comment to database with parents
      */
     
-    function insert_comm($comment){
-        $status;
-        if (strtolower($comment['status']) == "approved") {
-          $status = 1;
-        }
-        elseif (strtolower($comment['status'] == "pending") || strtolower($comment['status']) == "rejected") {
-          $status = 0;
-        }
-        elseif (strtolower($comment['status']) == "spam") {
-          $status = "spam";
-        }
-        elseif (strtolower($comment['status']) == "deleted") {
-        $status = "trash";
-    }
-    
+    function insert_comm($comment,$status){
+
         /*
          * Here you can convert $url to your post ID
          */
@@ -163,7 +150,8 @@ class Cackle{
 
         }
         $get_parent_local_id = null;
-        $comment_id = $comment['id']; 
+        $comment_id = $comment['id'];
+        $comment_modified = $comment['modified'];
         if ($comment['parentId']) {
             $comment_parent_id = $comment['parentId'];
             $sql = "select comment_id from comment where user_agent='Cackle:$comment_parent_id';";
@@ -195,13 +183,66 @@ class Cackle{
         $this->db_connect($sql_last_comment_delete);
         $this->db_connect($sql_last_comment_establish);
         $this->db_connect($sql_last_comment);
+        $get_last_modified = $this->db_connect("select common_value from common where `common_name` = 'last_modified'","common_value");
+        if ($comment['modified'] > $get_last_modified) {
+            $sql_last_modified_delete="delete from `common` where `common_name` = 'last_modified'";
+            $sql_last_modified_establish="insert into `common` set `common_name` = 'last_modified'";
+            $sql_last_modified="update `common` set `common_name` = 'last_modified', `common_value` = $comment_modified where `common_name` = 'last_modified';";
+            $this->db_connect($sql_last_modified_delete);
+            $this->db_connect($sql_last_modified_establish);
+            $this->db_connect($sql_last_modified);
+
+        }
         
     }
-   
+
+    function comment_status_decoder($comment) {
+        $status;
+        if (strtolower($comment['status']) == "approved") {
+            $status = 1;
+        }
+        elseif (strtolower($comment['status'] == "pending") || strtolower($comment['status']) == "rejected") {
+            $status = 0;
+        }
+        elseif (strtolower($comment['status']) == "spam") {
+            $status = 0;
+        }
+        elseif (strtolower($comment['status']) == "deleted") {
+            $status = 0;
+        }
+        return $status;
+    }
+
+    function update_comment_status($comment_id, $status, $modified, $comment_content) {
+        $sql_status="update `comment` set `status` = $status, `message` = '$comment_content' where `user_agent` = 'Cackle:$comment_id';";
+        $this->db_connect($sql_status);
+        $sql_last_modified_delete="delete from `common` where `common_name` = 'last_modified'";
+        $sql_last_modified_establish="insert into `common` set `common_name` = 'last_modified'";
+        $sql_last_modified="update `common` set `common_name` = 'last_modified', `common_value` = $modified where `common_name` = 'last_modified';";
+        $this->db_connect($sql_last_modified_delete);
+        $this->db_connect($sql_last_modified_establish);
+        $this->db_connect($sql_last_modified);
+
+    }
+
     function push_comments ($response){
         $obj = $response['comments'];
-        foreach ($obj as $comment) {
-            $this->insert_comm($comment);
+        if ($obj) {
+            foreach ($obj as $comment) {
+                $get_last_comment = $this->db_connect("select common_value from common where `common_name` = 'last_comment'","common_value");
+                $get_last_modified = $this->db_connect("select common_value from common where `common_name` = 'last_modified'","common_value");
+                if ($comment['id'] > $get_last_comment) {
+                    $this->insert_comm($comment, $this->comment_status_decoder($comment));
+                } else {
+                    if (!$get_last_modified){
+                        $get_last_modified == 0;
+                    }
+                    if ($comment['modified'] > $get_last_modified) {
+                        $this->update_comment_status($comment['id'], $this->comment_status_decoder($comment), $comment['modified'], $comment['message'] );
+                    }
+                }
+
+            }
         }
     }
      function cackle_comment( $comment) {
@@ -233,8 +274,8 @@ class Cackle{
             </div>
         </div>
         <script type="text/javascript">
-        var mcSite = '<?php echo $api_id?>';
-        var mcChannel = '<?php echo $post->ID?>';
+        var mcSite = '<?php echo $api_id //from cackle's admin panel?>';
+        var mcChannel = '<?php echo $post_id?>';
         document.getElementById('mc-container').innerHTML = '';
         (function() {
             var mc = document.createElement('script');
@@ -247,8 +288,8 @@ class Cackle{
 <?php }
     function get_local_comments(){
         //getting all comments for special post_id from database. 
-        //$post_id = 1;
-        $get_all_comments = $this->db_connect("select * from `comment` where `post_id` = $post_id and `status` = 1;");
+        //$post_id = 1; //ex.
+        $get_all_comments = $this->db_connect("select * from `comment` where `url` = $post_id and `status` = 1;");
         return $get_all_comments;
     }
     function list_comments(){
