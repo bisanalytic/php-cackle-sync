@@ -1,3 +1,5 @@
+<h1>This is depricated lib and it's not up to date. Use <a href="https://bitbucket.org/cackle-plugin/comment-php/">This</a></h1>
+
 php-cackle-sync
 ===============
 
